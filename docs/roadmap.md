@@ -22,3 +22,7 @@ Add a staff-facing interface that can safely consume ATHENA data before it start
 - one staff question can be answered using real ATHENA-backed data
 - the read path is traceable and easy to debug
 - the write path remains explicitly deferred behind approval rules
+
+## Tracer Ownership
+
+- later tracer: staff-facing read-only operations once ATHENA read surfaces stay stable

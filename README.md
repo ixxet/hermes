@@ -21,3 +21,9 @@ After ATHENA is stable, the first useful HERMES slice is:
 ## Current State
 
 Docs-first stub only. No Go gateway, Python agent, or bridge code has been created yet.
+
+See:
+
+- `docs/roadmap.md`
+- `docs/runbooks/read-only-ops.md`
+- `docs/growing-pains.md`
