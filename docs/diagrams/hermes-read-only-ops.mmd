@@ -1,0 +1,17 @@
+flowchart LR
+  staff["staff browser, phone, or CLI"]
+  gateway["Go gateway<br/>planned"]
+  agent["LangGraph agent<br/>planned"]
+  athena["ATHENA read surfaces<br/>planned dependency"]
+  db["Postgres<br/>bookings, equipment, audit<br/>planned"]
+  mem["Mem0<br/>planned"]
+  nats["NATS capacity events<br/>planned"]
+  approval["write approvals<br/>planned after read-only slice"]
+
+  staff --> gateway
+  gateway <--> agent
+  agent --> athena
+  agent --> db
+  agent --> mem
+  nats -. future subscription .-> agent
+  gateway -. future write gate .-> approval
