@@ -153,6 +153,7 @@ truth did not change.
 - [Planned HERMES diagram](docs/diagrams/hermes-read-only-ops.mmd)
 - [Roadmap](docs/roadmap.md)
 - [Growing pains](docs/growing-pains.md)
+- [Tracer 8 hardening](docs/hardening/tracer-8.md)
 - [Read-only ops runbook](docs/runbooks/read-only-ops.md)
 - [ADR index](docs/adr/README.md)
 - [Canonical repo brief](../ashton-platform/planning/repo-briefs/hermes.md)
