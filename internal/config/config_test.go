@@ -36,29 +36,32 @@ func TestConfigWithOverridesAcceptsFlagOverrides(t *testing.T) {
 func TestConfigWithOverridesRejectsInvalidValues(t *testing.T) {
 	testCases := []struct {
 		name    string
+		cfg     Config
 		baseURL string
 		timeout time.Duration
 	}{
 		{
 			name:    "invalid base url",
+			cfg:     Config{HTTPTimeout: 5 * time.Second},
 			baseURL: "://bad",
 			timeout: 5 * time.Second,
 		},
 		{
 			name:    "missing host",
+			cfg:     Config{HTTPTimeout: 5 * time.Second},
 			baseURL: "http://",
 			timeout: 5 * time.Second,
 		},
 		{
-			name:    "non positive timeout",
-			baseURL: "http://127.0.0.1:18080",
+			name:    "negative timeout override on existing config",
+			cfg:     Config{AthenaBaseURL: "http://127.0.0.1:18080", HTTPTimeout: 5 * time.Second},
 			timeout: -1 * time.Second,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := Config{}.WithOverrides(testCase.baseURL, testCase.timeout)
+			_, err := testCase.cfg.WithOverrides(testCase.baseURL, testCase.timeout)
 			if err == nil {
 				t.Fatal("WithOverrides() error = nil, want validation error")
 			}

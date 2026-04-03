@@ -39,7 +39,7 @@ func (c Config) WithOverrides(baseURL string, timeout time.Duration) (Config, er
 	if trimmed := strings.TrimSpace(baseURL); trimmed != "" {
 		c.AthenaBaseURL = trimmed
 	}
-	if timeout > 0 {
+	if timeout != 0 {
 		c.HTTPTimeout = timeout
 	}
 
