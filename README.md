@@ -124,6 +124,30 @@ Tracer 8 does not widen deployment truth.
 - verified deployed truth: unchanged from earlier milestones
 - deferred cluster truth: no live HERMES deployment claim exists yet
 
+## Hardening Notes
+
+Tracer 8 hardening intentionally exercised both successful and failing paths.
+The failing paths are part of the proof, not evidence that the happy path is
+broken.
+
+Expected destructive failures during hardening:
+
+- missing `--facility` fails clearly before any upstream call
+- invalid `--timeout` fails clearly during config validation
+- unavailable upstream fails clearly with a non-zero exit
+- malformed upstream JSON fails clearly instead of fabricating a fallback answer
+
+Accepted non-blocking carry-forward gaps:
+
+- HERMES success-path observability is still thin; runtime inspection relies
+  primarily on CLI output and upstream behavior rather than dedicated HERMES
+  request/result logs
+- no live HERMES deployment proof exists yet
+- no richer staff questions beyond occupancy are proven yet
+
+Prometheus remained out of scope for Tracer 8 hardening because deployment
+truth did not change.
+
 ## Docs Map
 
 - [Planned HERMES diagram](docs/diagrams/hermes-read-only-ops.mmd)

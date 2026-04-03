@@ -29,7 +29,8 @@ Use this runbook for the first HERMES slice before any write paths exist.
 cd /Users/zizo/Personal-Projects/ASHTON/hermes
 go test ./...
 go test -count=2 ./...
-go test -count=5 ./internal/config ./internal/athena ./internal/command
+go test -count=10 ./internal/athena -run '^(TestClientCurrentOccupancyConsumesAthenaReadSurface|TestClientCurrentOccupancyMapsUpstreamFailuresClearly)$'
+go test -count=10 ./internal/command -run '^(TestAskOccupancyCommandRequiresFacility|TestAskOccupancyCommandOutputsStableJSONShape|TestAskOccupancyCommandSupportsTextOutputAndClearErrors)$'
 go build ./cmd/hermes
 ```
 
@@ -65,6 +66,16 @@ Failure-mode smoke:
 ```bash
 cd /Users/zizo/Personal-Projects/ASHTON/hermes
 go run ./cmd/hermes ask occupancy \
+  --athena-base-url http://127.0.0.1:18090 \
+  --format json
+
+go run ./cmd/hermes ask occupancy \
+  --facility ashtonbee \
+  --athena-base-url http://127.0.0.1:18090 \
+  --timeout -1s \
+  --format json
+
+go run ./cmd/hermes ask occupancy \
   --facility ashtonbee \
   --athena-base-url http://127.0.0.1:18091 \
   --format json
@@ -76,5 +87,19 @@ Expected smoke outcomes:
   shape that ATHENA exposes, plus `source_service = "athena"`
 - unknown facilities remain source-backed and return `current_count = 0` if
   ATHENA says so
+- missing `--facility` fails clearly before an upstream request is attempted
+- invalid `--timeout` fails clearly during config validation
 - unavailable upstream reads fail clearly and return a non-zero CLI exit code
+- malformed upstream reads fail clearly and return a non-zero CLI exit code
 - no write behavior exists in the tracer
+
+## Hardening Interpretation
+
+Do not treat every failing command in the hardening pass as a product bug.
+
+- expected destructive failures are evidence that the CLI rejects bad input and
+  bad upstream states explicitly
+- unexpected failures are only the cases where a valid occupancy read against a
+  healthy ATHENA runtime breaks
+- Prometheus outage does not affect this tracer unless a future HERMES tracer
+  widens deployment truth
