@@ -1,110 +1,128 @@
 # hermes
 
-HERMES is the planned staff-facing operations assistant for the ASHTON
-platform. It sits on top of ATHENA's physical-truth surfaces and is meant to
-become the read-first, approval-gated conversational layer for facility staff.
+HERMES is the staff-facing operations repo in ASHTON.
 
-> Current state: docs-first. The repo has roadmap, runbook, ADR index, and
-> growing-pains notes, but no Go gateway, Python agent, bridge code, or service
-> runtime has been authored yet.
+> Current real slice: one read-only staff CLI question,
+> `hermes ask occupancy --facility <id>`, backed by ATHENA's public
+> `GET /api/v1/presence/count?facility=` surface. This tracer proves that
+> HERMES can read and summarize upstream truth without write authority,
+> private DB access, or agent orchestration.
 
-That is not a weakness if it is documented honestly. This README is setting the
-repo up for future expansion without pretending that the planned system already
-exists.
+That is intentionally narrow. HERMES is no longer docs-first, but it is still
+nowhere close to a broad assistant runtime. The value of this repo right now is
+that the first staff slice is executable, source-backed, and easy to audit.
 
 ## Planned Architecture
 
-The standalone Mermaid source for this plan lives at
+The standalone Mermaid source for the long-range plan lives at
 [`docs/diagrams/hermes-read-only-ops.mmd`](docs/diagrams/hermes-read-only-ops.mmd).
 
 ```mermaid
 flowchart LR
-  staff["staff browser, phone, or CLI"]
-  gateway["Go gateway<br/>planned"]
-  agent["LangGraph agent<br/>planned"]
-  athena["ATHENA read surfaces<br/>planned dependency"]
-  db["Postgres<br/>bookings, equipment, audit<br/>planned"]
-  mem["Mem0<br/>planned"]
-  nats["NATS capacity events<br/>planned"]
-  approval["write approvals<br/>planned after read-only slice"]
+  staff["staff CLI today<br/>gateway later"]
+  hermes["HERMES read-only runtime"]
+  athena["ATHENA public read surface"]
+  writes["future approvals and writes<br/>deferred"]
+  agent["future LangGraph orchestration<br/>deferred"]
 
-  staff --> gateway
-  gateway <--> agent
-  agent --> athena
-  agent --> db
-  agent --> mem
-  nats -. future subscription .-> agent
-  gateway -. future write gate .-> approval
+  staff --> hermes --> athena
+  hermes -. later .-> agent
+  hermes -. later .-> writes
 ```
+
+## Runtime Surfaces
+
+| Surface | Path / Command | Status | Notes |
+| --- | --- | --- | --- |
+| Occupancy CLI | `hermes ask occupancy --facility <id> [--athena-base-url ...] [--format json|text]` | Real | Read-only staff query backed by ATHENA HTTP |
+| Version CLI | `hermes version` | Real | Prints the current build version |
+| Go runtime bootstrap | `go run ./cmd/hermes` | Real | Starts the Cobra CLI |
+| Gateway | - | Planned | Not part of the current tracer |
+| Agent orchestration | - | Planned | Deferred until the read-only boundary is trusted |
+| Write actions | - | Deferred | No booking, maintenance, or approvals exist in runtime |
 
 ## Current Delivery State
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| README, roadmap, runbook, and growing-pains log | Instituted | The repo already has the first documentation spine |
-| Staff-only boundary | Instituted in docs | HERMES is explicitly not the student-facing product surface |
-| Go gateway runtime | Not started | Planned first executable layer |
-| LangGraph/Python agent | Not started | Planned after the gateway shape is clear |
-| Read-only ATHENA query path | Not started | This is the first tracer target |
-| Write actions and approvals | Not started | Deliberately deferred behind approval design |
+| Read-only staff boundary | Real | HERMES now answers one bounded staff question without write authority |
+| ATHENA client | Real | Uses ATHENA's public occupancy endpoint instead of private data access |
+| Structured result shape | Real | Returns `facility_id`, `current_count`, `observed_at`, and `source_service` |
+| Error handling | Real | Missing input, malformed upstream data, timeouts, and upstream 500s fail clearly |
+| Gateway, agent, approvals | Deferred | Still intentionally out of scope |
 
 ## Technology And Delivery Plan
 
 | Layer | Technology / Pattern | Status | Why |
 | --- | --- | --- | --- |
-| Documentation spine | Markdown READMEs, roadmap, runbook, growing pains | Instituted | Gives the repo a stable planning and narrative base |
-| Interactive gateway | Go | Planned | Keeps service patterns aligned with the rest of ASHTON |
-| Agent orchestration | LangGraph (Python) | Planned | Fits the existing long-range ASHTON agent model |
-| Go/Python bridge | gRPC streaming | Planned | Clear typed boundary between gateway and agent runtime |
-| LLM backend | vLLM via Prometheus infrastructure | Planned | HERMES should consume platform capabilities, not redefine them |
-| Staff memory | Mem0 | Planned | Useful later for cross-session operational context |
-| Operational database | Postgres | Planned | Bookings, maintenance, equipment, and audit data belong here |
-| Event subscription | NATS | Planned | Future capacity alerts and reactive notifications |
-| Staff identity | Tailscale WhoIs | Planned | Keeps staff auth friction low inside the private mesh |
-| Write safety | Human-in-the-loop approvals | Planned | Write actions should arrive only after read-only trust is earned |
-| Broad write surface | Any real booking or maintenance mutations | Deferred | Read-only trust comes first |
+| Documentation spine | Markdown READMEs, roadmap, runbook, growing pains | Instituted | Keeps the repo honest about what is real |
+| CLI runtime | Go + Cobra | Real | Smallest executable staff surface for the first tracer |
+| ATHENA client | Go `net/http` + explicit JSON parsing | Real | Reads stable public upstream truth without private schema drift |
+| Structured read output | JSON or text | Real | Keeps the first answer traceable and machine-checkable |
+| Interactive gateway | Go | Planned | Future staff session entrypoint, not current runtime |
+| Agent orchestration | LangGraph (Python) | Planned | Deferred until read-only trust is earned |
+| Write safety | Human-in-the-loop approvals | Planned | No write behavior exists yet |
+| Broad write surface | Booking, maintenance, or audit mutations | Deferred | This tracer is read-only by design |
 
 ## Staff Boundary
 
 | HERMES Should Do | HERMES Should Not Do |
 | --- | --- |
-| answer staff questions with real ATHENA-backed context | become the member-facing product |
-| surface operational data in natural language | own student social or matchmaking state |
-| later coordinate booking, maintenance, and approvals | bypass approval on real write actions |
-| later react to capacity conditions | redefine physical-truth logic that belongs in ATHENA |
+| answer one bounded staff ops question with real upstream data | own physical-truth or member-truth data |
+| identify the source service used for the answer | bypass service boundaries with private DB access |
+| fail clearly when the source service is unavailable or malformed | fabricate fallback answers |
+| stay read-only in the first tracer | expose bookings, maintenance, or approval writes |
 
 ## First Real Slice
 
-| In Scope | Out Of Scope |
-| --- | --- |
-| one staff-facing question answered with real ATHENA data | real booking writes |
-| a traceable read path from prompt to tool result | broad multi-tool agent orchestration |
-| clear approval model for future writes | pretending approvals are implemented before the read path exists |
-| observability and debugging discipline | member-facing flows |
+The chosen Tracer 8 question is:
 
-The first useful HERMES tracer is not "build the whole ops bot." It is "prove
-one read-only staff interaction cleanly and make the path easy to trust."
+- "What is the current occupancy at facility X right now?"
+
+That is intentionally narrower than "who is in the facility right now." The
+public ATHENA read surface exposes facility occupancy, not member identity, so
+HERMES does not invent a richer answer than the source can support.
+
+The current output shape is:
+
+- `facility_id`
+- `current_count`
+- `observed_at`
+- `source_service`
+- optional `notes`
+
+## Current Real Slice
+
+- `hermes ask occupancy --facility ashtonbee` is real
+- the command reads only from ATHENA's public
+  `GET /api/v1/presence/count?facility=` surface
+- the command is ownerless and staff-facing; there is no student or member
+  write path in this tracer
+- unknown facilities remain source-backed and resolve to `current_count = 0`
+  if ATHENA says so
+- timeouts, malformed JSON, and upstream 500s return explicit errors instead of
+  fabricated answers
+- the slice is locally proven only; no live deployment claim was added
 
 ## Planned Component Map
 
-| Planned Component | Responsibility | State |
+| Component | Responsibility | State |
 | --- | --- | --- |
-| Go gateway | WebSocket and REST entrypoint for staff sessions | Planned |
-| Agent runtime | Tool-calling orchestration and response generation | Planned |
-| ATHENA client layer | Read occupancy and facility state | Planned |
-| Booking service | Later room and resource booking logic | Planned |
-| Maintenance service | Later issue tracking and equipment workflows | Planned |
-| Audit trail | Track staff and agent actions | Planned |
-| Notification path | Later push or alert fan-out | Planned |
+| `cmd/hermes/` | CLI entrypoint | Real |
+| `internal/command/` | Cobra command wiring and output formatting | Real |
+| `internal/athena/` | ATHENA occupancy client | Real |
+| `internal/ops/` | Read-only occupancy answer service | Real |
+| `internal/config/` | CLI and environment config validation | Real |
+| gateway / agent / approvals | broader staff runtime | Planned |
 
-## Expansion Path
+## Deployment Boundary
 
-| Phase | Goal |
-| --- | --- |
-| Phase 1 | Read-only staff question over real ATHENA data |
-| Phase 2 | Durable gateway and agent boundary with traceable tool calls |
-| Phase 3 | Approval-gated write actions such as booking or maintenance filing |
-| Phase 4 | Reactive subscriptions and richer operational workflows |
+Tracer 8 does not widen deployment truth.
+
+- verified local truth: HERMES can answer one read-only occupancy question from
+  a real ATHENA runtime
+- verified deployed truth: unchanged from earlier milestones
+- deferred cluster truth: no live HERMES deployment claim exists yet
 
 ## Docs Map
 
@@ -117,7 +135,7 @@ one read-only staff interaction cleanly and make the path easy to trust."
 
 ## Why HERMES Matters
 
-Documented honestly, HERMES already tells a useful story: the platform is not
-just collecting data, it is being shaped into a staff-operable system with
-explicit safety boundaries. The repo now has a structure that makes future
-implementation easier to trust instead of harder to untangle.
+HERMES now proves the first staff-facing read path in ASHTON. That matters less
+because the question is big and more because the boundary is clean: one bounded
+operational question, one public upstream read surface, zero write authority,
+and no invented truth.
