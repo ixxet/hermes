@@ -12,20 +12,39 @@ That is intentionally narrow. HERMES is no longer docs-first, but it is still
 nowhere close to a broad assistant runtime. The value of this repo right now is
 that the first staff slice is executable, source-backed, and easy to audit.
 
-## Planned Architecture
+Representative command:
 
-The standalone Mermaid source for the long-range plan lives at
+```bash
+hermes ask occupancy --facility ashtonbee --format json
+```
+
+Representative response:
+
+```json
+{
+  "facility_id": "ashtonbee",
+  "current_count": 42,
+  "observed_at": "2026-04-04T12:00:00Z",
+  "source_service": "athena"
+}
+```
+
+## Current And Future Architecture
+
+The standalone Mermaid source for the current and future view lives at
 [`docs/diagrams/hermes-read-only-ops.mmd`](docs/diagrams/hermes-read-only-ops.mmd).
 
 ```mermaid
 flowchart LR
-  staff["staff CLI today<br/>gateway later"]
+  staff["staff CLI today"]
   hermes["HERMES read-only runtime"]
-  athena["ATHENA public read surface"]
-  writes["future approvals and writes<br/>deferred"]
-  agent["future LangGraph orchestration<br/>deferred"]
+  athena["ATHENA public HTTP read<br/>current occupancy"]
+  gateway["future gateway session entrypoint"]
+  writes["future approvals and writes"]
+  agent["future LangGraph orchestration"]
 
   staff --> hermes --> athena
+  hermes -. later .-> gateway
   hermes -. later .-> agent
   hermes -. later .-> writes
 ```
@@ -53,16 +72,18 @@ flowchart LR
 
 ## Technology And Delivery Plan
 
-| Layer | Technology / Pattern | Status | Why |
-| --- | --- | --- | --- |
-| Documentation spine | Markdown READMEs, roadmap, runbook, growing pains | Instituted | Keeps the repo honest about what is real |
-| CLI runtime | Go + Cobra | Real | Smallest executable staff surface for the first tracer |
-| ATHENA client | Go `net/http` + explicit JSON parsing | Real | Reads stable public upstream truth without private schema drift |
-| Structured read output | JSON or text | Real | Keeps the first answer traceable and machine-checkable |
-| Interactive gateway | Go | Planned | Future staff session entrypoint, not current runtime |
-| Agent orchestration | LangGraph (Python) | Planned | Deferred until read-only trust is earned |
-| Write safety | Human-in-the-loop approvals | Planned | No write behavior exists yet |
-| Broad write surface | Booking, maintenance, or audit mutations | Deferred | This tracer is read-only by design |
+| Layer | Technology / Pattern | Status | Line | Why |
+| --- | --- | --- | --- | --- |
+| Documentation spine | Markdown READMEs, roadmap, runbook, growing pains | Instituted | `v0.0.1` -> `v0.1.0` | Keeps the repo honest about what is real |
+| CLI runtime | Go + Cobra | Real | `v0.1.0` | Smallest executable staff surface for the first tracer |
+| ATHENA client | Go `net/http` + explicit JSON parsing | Real | `v0.1.0` | Reads stable public upstream truth without private schema drift |
+| Structured read output | JSON or text | Real | `v0.1.0` | Keeps the first answer traceable and machine-checkable |
+| Observability hardening | low-noise structured request/result logs | Planned | `v0.1.1` | Tracer 14 should strengthen operational maturity before widening scope |
+| Live deployment proof | containerized HERMES runtime | Planned | `v0.2.0` | Milestone 1.7 should prove the existing slice live without widening the question |
+| Interactive gateway | Go | Planned | later than `v0.2.0` | Future staff session entrypoint, not current runtime |
+| Agent orchestration | LangGraph (Python) | Planned | later than `v0.3.0` | Deferred until read-only trust is earned |
+| Write safety | Human-in-the-loop approvals | Planned | `v0.4.0` | No write behavior exists yet |
+| Broad write surface | Booking, maintenance, or audit mutations | Deferred | later than `v0.4.0` | This tracer is read-only by design |
 
 ## Staff Boundary
 
@@ -148,9 +169,25 @@ Accepted non-blocking carry-forward gaps:
 Prometheus remained out of scope for Tracer 8 hardening because deployment
 truth did not change.
 
+## Release History
+
+| Release line | Exact tags | Status | What became real | What stayed deferred |
+| --- | --- | --- | --- | --- |
+| `v0.0.1` | `v0.0.1` | Shipped | docs-first planning baseline | executable runtime, deployment proof, and write actions |
+| `v0.1.0` | `v0.1.0` | Shipped | read-only occupancy CLI over ATHENA public truth | observability hardening, live deployment proof, richer questions, and write actions |
+
+## Planned Release Lines
+
+| Planned tag | Intended purpose | Restrictions | What it should not do yet |
+| --- | --- | --- | --- |
+| `v0.1.1` | observability hardening for Tracer 14 | keep the surface read-only and occupancy-only | do not widen into richer staff questions or writes |
+| `v0.2.0` | live deployment proof for Milestone 1.7 | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
+| `v0.3.0` | one richer read-only staff question if public upstream truth supports it | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
+| `v0.4.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
+
 ## Docs Map
 
-- [Planned HERMES diagram](docs/diagrams/hermes-read-only-ops.mmd)
+- [Current and future HERMES diagram](docs/diagrams/hermes-read-only-ops.mmd)
 - [Roadmap](docs/roadmap.md)
 - [Growing pains](docs/growing-pains.md)
 - [Tracer 8 hardening](docs/hardening/tracer-8.md)
