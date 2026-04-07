@@ -185,6 +185,14 @@ truth did not change.
 | `v0.3.0` | one richer read-only staff question if public upstream truth supports it | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
 | `v0.4.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
+## Next Ladder Role
+
+| Line | Role | Why it matters |
+| --- | --- | --- |
+| `v0.1.1` / `Tracer 14` | observability hardening | turns the current occupancy CLI from a thin proof into an inspectable operational slice |
+| `v0.2.0` / `Milestone 1.7` | bounded live deployment proof | upgrades the staff pillar from local/runtime truth to live deployment truth |
+| `v0.3.0` / `Tracer 17` | one richer read-only staff question | creates the first broader operator-facing read surface without widening into overrides or writes |
+
 ## Docs Map
 
 - [Current and future HERMES diagram](docs/diagrams/hermes-read-only-ops.mmd)

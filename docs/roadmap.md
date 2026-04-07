@@ -23,6 +23,14 @@ Current active line: `v0.1.0`
 | `v0.3.0` | one richer read-only staff question if a stable public upstream surface exists | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
 | `v0.4.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
+## Next Ladder Role
+
+| Line | Role | Why it matters |
+| --- | --- | --- |
+| `Tracer 14` | observability-only hardening | makes the current occupancy slice operationally inspectable before any wider staff claim |
+| `Milestone 1.7` | bounded live deployment proof | upgrades HERMES from local/runtime truth to deploy truth |
+| `Tracer 17` | one richer read-only question | broadens the staff pillar only after observability and deployment trust exist |
+
 ## Boundaries
 
 - keep staff operations sourced from public upstream service truth
