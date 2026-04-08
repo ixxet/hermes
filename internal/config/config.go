@@ -11,7 +11,13 @@ import (
 
 const defaultHTTPTimeout = 5 * time.Second
 
-var ErrAthenaBaseURLRequired = errors.New("HERMES_ATHENA_BASE_URL or --athena-base-url is required")
+var (
+	ErrAthenaBaseURLRequired   = errors.New("HERMES_ATHENA_BASE_URL or --athena-base-url is required")
+	ErrAthenaBaseURLInvalid    = errors.New("athena base url is invalid")
+	ErrAthenaBaseURLIncomplete = errors.New("athena base url must include scheme and host")
+	ErrHTTPTimeoutInvalid      = errors.New("http timeout must be greater than zero")
+	ErrHTTPTimeoutParse        = errors.New("HERMES_HTTP_TIMEOUT is invalid")
+)
 
 type Config struct {
 	AthenaBaseURL string
@@ -27,7 +33,7 @@ func Load() (Config, error) {
 	if rawTimeout := strings.TrimSpace(os.Getenv("HERMES_HTTP_TIMEOUT")); rawTimeout != "" {
 		timeout, err := time.ParseDuration(rawTimeout)
 		if err != nil {
-			return Config{}, fmt.Errorf("HERMES_HTTP_TIMEOUT is invalid: %w", err)
+			return Config{}, fmt.Errorf("%w: %v", ErrHTTPTimeoutParse, err)
 		}
 		cfg.HTTPTimeout = timeout
 	}
@@ -53,13 +59,13 @@ func (c Config) Validate() error {
 
 	parsed, err := url.Parse(strings.TrimSpace(c.AthenaBaseURL))
 	if err != nil {
-		return fmt.Errorf("athena base url is invalid: %w", err)
+		return fmt.Errorf("%w: %v", ErrAthenaBaseURLInvalid, err)
 	}
 	if parsed.Scheme == "" || parsed.Host == "" {
-		return errors.New("athena base url must include scheme and host")
+		return ErrAthenaBaseURLIncomplete
 	}
 	if c.HTTPTimeout <= 0 {
-		return errors.New("http timeout must be greater than zero")
+		return ErrHTTPTimeoutInvalid
 	}
 
 	return nil

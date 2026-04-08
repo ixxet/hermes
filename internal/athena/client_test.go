@@ -63,6 +63,10 @@ func TestClientCurrentOccupancyMapsUpstreamFailuresClearly(t *testing.T) {
 				_, _ = w.Write([]byte(`{"error":"read path unavailable"}`))
 			},
 			wantErr: "status 500: read path unavailable",
+			checkErr: func(err error) bool {
+				var upstreamErr *UpstreamStatusError
+				return errors.As(err, &upstreamErr) && upstreamErr.StatusCode == http.StatusInternalServerError
+			},
 		},
 		{
 			name: "malformed upstream json",
@@ -86,8 +90,9 @@ func TestClientCurrentOccupancyMapsUpstreamFailuresClearly(t *testing.T) {
 				time.Sleep(50 * time.Millisecond)
 				_, _ = w.Write([]byte(`{"facility_id":"ashtonbee","current_count":9,"observed_at":"2026-04-02T16:00:00Z"}`))
 			},
-			wantErr: "timed out",
-			timeout: 10 * time.Millisecond,
+			wantErr:  "timed out",
+			timeout:  10 * time.Millisecond,
+			checkErr: func(err error) bool { return errors.Is(err, ErrRequestTimeout) },
 		},
 	}
 
@@ -117,5 +122,20 @@ func TestClientCurrentOccupancyMapsUpstreamFailuresClearly(t *testing.T) {
 				t.Fatalf("CurrentOccupancy() error = %v, want specific classification", err)
 			}
 		})
+	}
+}
+
+func TestClientCurrentOccupancyClassifiesTransportFailure(t *testing.T) {
+	client, err := NewClient("http://127.0.0.1:1", 10*time.Millisecond)
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	_, err = client.CurrentOccupancy(context.Background(), "ashtonbee")
+	if err == nil {
+		t.Fatal("CurrentOccupancy() error = nil, want transport failure")
+	}
+	if !errors.Is(err, ErrRequestFailed) {
+		t.Fatalf("CurrentOccupancy() error = %v, want %v", err, ErrRequestFailed)
 	}
 }

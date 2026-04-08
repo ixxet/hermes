@@ -24,6 +24,8 @@ type Dependencies struct {
 	Stdout            io.Writer
 	Stderr            io.Writer
 	Version           string
+	Now               func() time.Time
+	NewRequestID      func() string
 	LoadConfig        func() (config.Config, error)
 	NewOccupancyAsker func(config.Config) (OccupancyAsker, error)
 }
@@ -33,13 +35,27 @@ var validFormats = map[string]struct{}{
 	"text": {},
 }
 
+var ErrInvalidFormat = errors.New("format must be one of: json, text")
+
 func Execute(args []string, deps Dependencies) error {
-	command := NewRootCommand(deps)
+	command, trace := newRootCommand(args, deps)
+	if trace != nil {
+		trace.Start()
+	}
 	command.SetArgs(args)
-	return command.Execute()
+	err := command.Execute()
+	if err != nil && trace != nil {
+		trace.Fail(err)
+	}
+	return err
 }
 
 func NewRootCommand(deps Dependencies) *cobra.Command {
+	command, _ := newRootCommand(nil, deps)
+	return command
+}
+
+func newRootCommand(args []string, deps Dependencies) (*cobra.Command, *occupancyTrace) {
 	stdout := deps.Stdout
 	if stdout == nil {
 		stdout = os.Stdout
@@ -65,6 +81,19 @@ func NewRootCommand(deps Dependencies) *cobra.Command {
 	version := deps.Version
 	if version == "" {
 		version = "dev"
+	}
+	now := deps.Now
+	if now == nil {
+		now = time.Now
+	}
+	newRequestID := deps.NewRequestID
+	if newRequestID == nil {
+		newRequestID = nextRequestID
+	}
+
+	var trace *occupancyTrace
+	if facility, ok := occupancyInvocationFacility(args); ok {
+		trace = newOccupancyTrace(stderr, now, newRequestID(), facility, version)
 	}
 
 	root := &cobra.Command{
@@ -103,7 +132,7 @@ func NewRootCommand(deps Dependencies) *cobra.Command {
 		Short: "Read current facility occupancy from ATHENA",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if _, ok := validFormats[format]; !ok {
-				return errors.New("format must be one of: json, text")
+				return ErrInvalidFormat
 			}
 
 			cfg, err := loadConfig()
@@ -125,12 +154,19 @@ func NewRootCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
+			var writeErr error
 			switch format {
 			case "json":
-				return writeJSON(stdout, answer)
+				writeErr = writeJSON(stdout, answer)
 			case "text":
-				_, err := fmt.Fprintf(stdout, "facility_id=%s current_count=%d observed_at=%s source_service=%s\n", answer.FacilityID, answer.CurrentCount, answer.ObservedAt, answer.SourceService)
-				return err
+				_, writeErr = fmt.Fprintf(stdout, "facility_id=%s current_count=%d observed_at=%s source_service=%s\n", answer.FacilityID, answer.CurrentCount, answer.ObservedAt, answer.SourceService)
+			}
+			if writeErr != nil {
+				return writeErr
+			}
+
+			if trace != nil {
+				trace.Complete(answer)
 			}
 
 			return nil
@@ -143,7 +179,7 @@ func NewRootCommand(deps Dependencies) *cobra.Command {
 	_ = occupancyCommand.MarkFlagRequired("facility")
 	askCommand.AddCommand(occupancyCommand)
 
-	return root
+	return root, trace
 }
 
 func writeJSON(writer io.Writer, payload any) error {

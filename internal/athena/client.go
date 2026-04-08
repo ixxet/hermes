@@ -13,7 +13,11 @@ import (
 	"time"
 )
 
-var ErrMalformedResponse = errors.New("athena occupancy response is malformed")
+var (
+	ErrMalformedResponse = errors.New("athena occupancy response is malformed")
+	ErrRequestTimeout    = errors.New("athena occupancy request timed out")
+	ErrRequestFailed     = errors.New("athena occupancy request failed")
+)
 
 type UpstreamStatusError struct {
 	StatusCode int
@@ -79,15 +83,15 @@ func (c *Client) CurrentOccupancy(ctx context.Context, facilityID string) (Occup
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return OccupancySnapshot{}, fmt.Errorf("athena occupancy request timed out: %w", err)
+			return OccupancySnapshot{}, fmt.Errorf("%w: %v", ErrRequestTimeout, err)
 		}
 
 		var netErr net.Error
 		if errors.As(err, &netErr) && netErr.Timeout() {
-			return OccupancySnapshot{}, fmt.Errorf("athena occupancy request timed out: %w", err)
+			return OccupancySnapshot{}, fmt.Errorf("%w: %v", ErrRequestTimeout, err)
 		}
 
-		return OccupancySnapshot{}, fmt.Errorf("athena occupancy request failed: %w", err)
+		return OccupancySnapshot{}, fmt.Errorf("%w: %v", ErrRequestFailed, err)
 	}
 	defer response.Body.Close()
 

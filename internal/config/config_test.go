@@ -42,23 +42,27 @@ func TestConfigWithOverridesRejectsInvalidValues(t *testing.T) {
 		cfg     Config
 		baseURL string
 		timeout time.Duration
+		wantErr error
 	}{
 		{
 			name:    "invalid base url",
 			cfg:     Config{HTTPTimeout: 5 * time.Second},
 			baseURL: "://bad",
 			timeout: 5 * time.Second,
+			wantErr: ErrAthenaBaseURLInvalid,
 		},
 		{
 			name:    "missing host",
 			cfg:     Config{HTTPTimeout: 5 * time.Second},
 			baseURL: "http://",
 			timeout: 5 * time.Second,
+			wantErr: ErrAthenaBaseURLIncomplete,
 		},
 		{
 			name:    "negative timeout override on existing config",
 			cfg:     Config{AthenaBaseURL: "http://127.0.0.1:18080", HTTPTimeout: 5 * time.Second},
 			timeout: -1 * time.Second,
+			wantErr: ErrHTTPTimeoutInvalid,
 		},
 	}
 
@@ -68,6 +72,22 @@ func TestConfigWithOverridesRejectsInvalidValues(t *testing.T) {
 			if err == nil {
 				t.Fatal("WithOverrides() error = nil, want validation error")
 			}
+			if !errors.Is(err, testCase.wantErr) {
+				t.Fatalf("WithOverrides() error = %v, want %v", err, testCase.wantErr)
+			}
 		})
+	}
+}
+
+func TestLoadRejectsInvalidEnvTimeout(t *testing.T) {
+	t.Setenv("HERMES_ATHENA_BASE_URL", "http://127.0.0.1:18080")
+	t.Setenv("HERMES_HTTP_TIMEOUT", "tomorrow")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load() error = nil, want invalid timeout error")
+	}
+	if !errors.Is(err, ErrHTTPTimeoutParse) {
+		t.Fatalf("Load() error = %v, want %v", err, ErrHTTPTimeoutParse)
 	}
 }

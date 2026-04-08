@@ -67,6 +67,7 @@ flowchart LR
 | Read-only staff boundary | Real | HERMES now answers one bounded staff question without write authority |
 | ATHENA client | Real | Uses ATHENA's public occupancy endpoint instead of private data access |
 | Structured result shape | Real | Returns `facility_id`, `current_count`, `observed_at`, and `source_service` |
+| Structured observability | Real | Emits one request-start and one request-complete or request-failed log line per occupancy request on stderr only |
 | Error handling | Real | Missing input, malformed upstream data, timeouts, and upstream 500s fail clearly |
 | Gateway, agent, approvals | Deferred | Still intentionally out of scope |
 
@@ -78,7 +79,7 @@ flowchart LR
 | CLI runtime | Go + Cobra | Real | `v0.1.0` | Smallest executable staff surface for the first tracer |
 | ATHENA client | Go `net/http` + explicit JSON parsing | Real | `v0.1.0` | Reads stable public upstream truth without private schema drift |
 | Structured read output | JSON or text | Real | `v0.1.0` | Keeps the first answer traceable and machine-checkable |
-| Observability hardening | low-noise structured request/result logs | Planned | `v0.1.1` | Tracer 14 should strengthen operational maturity before widening scope |
+| Observability hardening | low-noise structured request/result logs | Real | `v0.1.1` | Tracer 14 makes the current occupancy slice operationally inspectable without widening it |
 | Live deployment proof | deployed HERMES runtime | Planned | `v0.1.2` if runtime changes, otherwise deployment closeout only | Milestone 1.7 should prove the existing slice live without widening the question |
 | Interactive gateway | Go | Planned | later than `v0.2.0` | Future staff session entrypoint, not current runtime |
 | Agent orchestration | LangGraph (Python) | Planned | later than `v0.3.0` | Deferred until read-only trust is earned |
@@ -121,6 +122,9 @@ The current output shape is:
   write path in this tracer
 - unknown facilities remain source-backed and resolve to `current_count = 0`
   if ATHENA says so
+- each occupancy request now emits one structured `request-start` line and one
+  structured `request-complete` or `request-failed` line on stderr only, so
+  stdout answer payloads stay unchanged
 - timeouts, malformed JSON, and upstream 500s return explicit errors instead of
   fabricated answers
 - the slice is locally proven only; no live deployment claim was added
@@ -160,9 +164,6 @@ Expected destructive failures during hardening:
 
 Accepted non-blocking carry-forward gaps:
 
-- HERMES success-path observability is still thin; runtime inspection relies
-  primarily on CLI output and upstream behavior rather than dedicated HERMES
-  request/result logs
 - no live HERMES deployment proof exists yet
 - no richer staff questions beyond occupancy are proven yet
 

@@ -7,12 +7,14 @@ source-backed boundary is trustworthy and observable.
 
 ## Current Line
 
-Current active line: `v0.1.0`
+Current active line: `v0.1.1`
 
 - one read-only occupancy CLI question is real
+- low-noise structured request/result/outcome observability is now real for the
+  occupancy slice
 - ATHENA public truth is the only upstream source in active use
 - the slice is locally proven only
-- richer observability, deployment proof, and write authority remain deferred
+- deployment proof and write authority remain deferred
 
 ## Versioning Discipline
 
@@ -28,7 +30,6 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
-| `v0.1.1` | observability hardening for Tracer 14 | keep the surface read-only and occupancy-only | do not widen into richer staff questions or writes |
 | `v0.1.2` | live deployment proof for Milestone 1.7 if runtime changes are required | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
 | deployment-only closeout | live deployment proof for Milestone 1.7 if runtime stays unchanged | keep the runtime line at `v0.1.1` and close deployment proof in companion repos/docs | do not overstate a new capability line when only deployment truth changed |
 | `v0.2.0` | one richer read-only staff question if a stable public upstream surface exists | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
@@ -38,7 +39,6 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 
 | Line | Role | Why it matters |
 | --- | --- | --- |
-| `Tracer 14` | observability-only hardening | makes the current occupancy slice operationally inspectable before any wider staff claim |
 | `Milestone 1.7` | bounded live deployment proof | upgrades HERMES from local/runtime truth to deploy truth |
 | `Tracer 17` | one richer read-only question | broadens the staff pillar only after observability and deployment trust exist |
 
