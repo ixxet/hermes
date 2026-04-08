@@ -116,14 +116,19 @@ func TestAskOccupancyCommandSupportsTextOutputAndClearErrors(t *testing.T) {
 	})
 
 	t.Run("invalid format", func(t *testing.T) {
+		loadCalled := false
+		askCalled := false
+
 		err := Execute([]string{"ask", "occupancy", "--facility", "ashtonbee", "--format", "yaml"}, Dependencies{
 			LoadConfig: func() (config.Config, error) {
+				loadCalled = true
 				return config.Config{
 					AthenaBaseURL: "http://127.0.0.1:18080",
 					HTTPTimeout:   5 * time.Second,
 				}, nil
 			},
 			NewOccupancyAsker: func(config.Config) (OccupancyAsker, error) {
+				askCalled = true
 				return stubOccupancyAsker{}, nil
 			},
 		})
@@ -132,6 +137,12 @@ func TestAskOccupancyCommandSupportsTextOutputAndClearErrors(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "format must be one of: json, text") {
 			t.Fatalf("Execute() error = %q, want invalid format error", err.Error())
+		}
+		if loadCalled {
+			t.Fatal("LoadConfig() was called for invalid format")
+		}
+		if askCalled {
+			t.Fatal("NewOccupancyAsker() was called for invalid format")
 		}
 	})
 

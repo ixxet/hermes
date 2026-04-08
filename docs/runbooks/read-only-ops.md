@@ -79,6 +79,9 @@ go run ./cmd/hermes ask occupancy \
   --facility ashtonbee \
   --athena-base-url http://127.0.0.1:18091 \
   --format json
+
+go test -count=10 ./internal/athena \
+  -run 'TestClientCurrentOccupancyMapsUpstreamFailuresClearly/malformed_upstream_json'
 ```
 
 Expected smoke outcomes:
@@ -90,6 +93,7 @@ Expected smoke outcomes:
 - missing `--facility` fails clearly before an upstream request is attempted
 - invalid `--timeout` fails clearly during config validation
 - unavailable upstream reads fail clearly and return a non-zero CLI exit code
+- malformed upstream JSON is verified via the targeted ATHENA client test above
 - malformed upstream reads fail clearly and return a non-zero CLI exit code
 - no write behavior exists in the tracer
 

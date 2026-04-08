@@ -7,6 +7,9 @@ import (
 )
 
 func TestConfigWithOverridesValidatesRequiredValues(t *testing.T) {
+	t.Setenv("HERMES_ATHENA_BASE_URL", "")
+	t.Setenv("HERMES_HTTP_TIMEOUT", "")
+
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)

@@ -28,6 +28,11 @@ type Dependencies struct {
 	NewOccupancyAsker func(config.Config) (OccupancyAsker, error)
 }
 
+var validFormats = map[string]struct{}{
+	"json": {},
+	"text": {},
+}
+
 func Execute(args []string, deps Dependencies) error {
 	command := NewRootCommand(deps)
 	command.SetArgs(args)
@@ -97,6 +102,10 @@ func NewRootCommand(deps Dependencies) *cobra.Command {
 		Use:   "occupancy",
 		Short: "Read current facility occupancy from ATHENA",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if _, ok := validFormats[format]; !ok {
+				return errors.New("format must be one of: json, text")
+			}
+
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
@@ -122,9 +131,9 @@ func NewRootCommand(deps Dependencies) *cobra.Command {
 			case "text":
 				_, err := fmt.Fprintf(stdout, "facility_id=%s current_count=%d observed_at=%s source_service=%s\n", answer.FacilityID, answer.CurrentCount, answer.ObservedAt, answer.SourceService)
 				return err
-			default:
-				return errors.New("format must be one of: json, text")
 			}
+
+			return nil
 		},
 	}
 	occupancyCommand.Flags().StringVar(&facility, "facility", "", "facility identifier to query")

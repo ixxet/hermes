@@ -54,7 +54,7 @@ flowchart LR
 | Surface | Path / Command | Status | Notes |
 | --- | --- | --- | --- |
 | Occupancy CLI | `hermes ask occupancy --facility <id> [--athena-base-url ...] [--format json|text]` | Real | Read-only staff query backed by ATHENA HTTP |
-| Version CLI | `hermes version` | Real | Prints the current build version |
+| Version CLI | `hermes version` | Real | Prints the injected build version, or `dev` for local source builds |
 | Go runtime bootstrap | `go run ./cmd/hermes` | Real | Starts the Cobra CLI |
 | Gateway | - | Planned | Not part of the current tracer |
 | Agent orchestration | - | Planned | Deferred until the read-only boundary is trusted |
@@ -79,11 +79,11 @@ flowchart LR
 | ATHENA client | Go `net/http` + explicit JSON parsing | Real | `v0.1.0` | Reads stable public upstream truth without private schema drift |
 | Structured read output | JSON or text | Real | `v0.1.0` | Keeps the first answer traceable and machine-checkable |
 | Observability hardening | low-noise structured request/result logs | Planned | `v0.1.1` | Tracer 14 should strengthen operational maturity before widening scope |
-| Live deployment proof | containerized HERMES runtime | Planned | `v0.2.0` | Milestone 1.7 should prove the existing slice live without widening the question |
+| Live deployment proof | deployed HERMES runtime | Planned | `v0.1.2` if runtime changes, otherwise deployment closeout only | Milestone 1.7 should prove the existing slice live without widening the question |
 | Interactive gateway | Go | Planned | later than `v0.2.0` | Future staff session entrypoint, not current runtime |
 | Agent orchestration | LangGraph (Python) | Planned | later than `v0.3.0` | Deferred until read-only trust is earned |
-| Write safety | Human-in-the-loop approvals | Planned | `v0.4.0` | No write behavior exists yet |
-| Broad write surface | Booking, maintenance, or audit mutations | Deferred | later than `v0.4.0` | This tracer is read-only by design |
+| Write safety | Human-in-the-loop approvals | Planned | `v0.3.0` | No write behavior exists yet |
+| Broad write surface | Booking, maintenance, or audit mutations | Deferred | later than `v0.3.0` | This tracer is read-only by design |
 
 ## Staff Boundary
 
@@ -166,6 +166,11 @@ Accepted non-blocking carry-forward gaps:
 - no live HERMES deployment proof exists yet
 - no richer staff questions beyond occupancy are proven yet
 
+If `Milestone 1.7` lands without widening the runtime, the deployment closeout
+may be carried by companion deploy/docs repos rather than a new HERMES minor
+release. If runtime-safe HERMES changes are required, that line should remain a
+patch-style `v0.1.2`, not a new capability minor.
+
 Prometheus remained out of scope for Tracer 8 hardening because deployment
 truth did not change.
 
@@ -176,22 +181,36 @@ truth did not change.
 | `v0.0.1` | `v0.0.1` | Shipped | docs-first planning baseline | executable runtime, deployment proof, and write actions |
 | `v0.1.0` | `v0.1.0` | Shipped | read-only occupancy CLI over ATHENA public truth | observability hardening, live deployment proof, richer questions, and write actions |
 
+## Versioning Discipline
+
+HERMES now follows formal pre-`1.0.0` semantic versioning rather than loose
+"semver-lite" wording.
+
+- `PATCH` releases are for observability, hardening, documentation, deployment
+  closeout, and bounded non-widening fixes
+- `MINOR` releases are for new bounded read capabilities, new write
+  capabilities, or intentional pre-`1.0.0` boundary changes
+- pre-`1.0.0` breaking changes still require a `MINOR`, never a `PATCH`
+- `1.0.0` is reserved for a stable operator contract with trusted deployment,
+  legible docs, and durable boundary expectations
+
 ## Planned Release Lines
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
 | `v0.1.1` | observability hardening for Tracer 14 | keep the surface read-only and occupancy-only | do not widen into richer staff questions or writes |
-| `v0.2.0` | live deployment proof for Milestone 1.7 | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
-| `v0.3.0` | one richer read-only staff question if public upstream truth supports it | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
-| `v0.4.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
+| `v0.1.2` | live deployment proof for Milestone 1.7 if runtime changes are required | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
+| deployment-only closeout | live deployment proof for Milestone 1.7 if runtime stays unchanged | keep the runtime line at `v0.1.1` and close the deployment proof in companion repos/docs | do not overstate a new HERMES capability line when only deployment truth changed |
+| `v0.2.0` | one richer read-only staff question if public upstream truth supports it | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
+| `v0.3.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
 ## Next Ladder Role
 
 | Line | Role | Why it matters |
 | --- | --- | --- |
 | `v0.1.1` / `Tracer 14` | observability hardening | turns the current occupancy CLI from a thin proof into an inspectable operational slice |
-| `v0.2.0` / `Milestone 1.7` | bounded live deployment proof | upgrades the staff pillar from local/runtime truth to live deployment truth |
-| `v0.3.0` / `Tracer 17` | one richer read-only staff question | creates the first broader operator-facing read surface without widening into overrides or writes |
+| `v0.1.2` if runtime changes, otherwise deploy-only / `Milestone 1.7` | bounded live deployment proof | upgrades the staff pillar from local/runtime truth to live deployment truth without pretending that deployment proof is automatically a new capability |
+| `v0.2.0` / `Tracer 17` | one richer read-only staff question | creates the first broader operator-facing read surface without widening into overrides or writes |
 
 ## Docs Map
 
