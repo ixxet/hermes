@@ -181,6 +181,7 @@ truth did not change.
 | --- | --- | --- | --- | --- |
 | `v0.0.1` | `v0.0.1` | Shipped | docs-first planning baseline | executable runtime, deployment proof, and write actions |
 | `v0.1.0` | `v0.1.0` | Shipped | read-only occupancy CLI over ATHENA public truth | observability hardening, live deployment proof, richer questions, and write actions |
+| `v0.1.1` | `v0.1.1` | Shipped | low-noise structured occupancy request/result/outcome observability without runtime widening | live deployment proof, richer questions, and write actions |
 
 ## Versioning Discipline
 
@@ -199,7 +200,6 @@ HERMES now follows formal pre-`1.0.0` semantic versioning rather than loose
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
-| `v0.1.1` | observability hardening for Tracer 14 | keep the surface read-only and occupancy-only | do not widen into richer staff questions or writes |
 | `v0.1.2` | live deployment proof for Milestone 1.7 if runtime changes are required | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
 | deployment-only closeout | live deployment proof for Milestone 1.7 if runtime stays unchanged | keep the runtime line at `v0.1.1` and close the deployment proof in companion repos/docs | do not overstate a new HERMES capability line when only deployment truth changed |
 | `v0.2.0` | one richer read-only staff question if public upstream truth supports it | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
@@ -219,6 +219,7 @@ HERMES now follows formal pre-`1.0.0` semantic versioning rather than loose
 - [Roadmap](docs/roadmap.md)
 - [Growing pains](docs/growing-pains.md)
 - [Tracer 8 hardening](docs/hardening/tracer-8.md)
+- [Tracer 14 hardening](docs/hardening/tracer-14.md)
 - [Read-only ops runbook](docs/runbooks/read-only-ops.md)
 - [ADR index](docs/adr/README.md)
 - [Canonical repo brief](../ashton-platform/planning/repo-briefs/hermes.md)
