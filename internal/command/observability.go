@@ -24,6 +24,7 @@ type occupancyTrace struct {
 	requestID string
 	facility  string
 	version   string
+	started   bool
 	startedAt time.Time
 	finished  bool
 }
@@ -84,10 +85,11 @@ func occupancyInvocationFacility(args []string) (string, bool) {
 }
 
 func (t *occupancyTrace) Start() {
-	if t == nil || t.finished {
+	if t == nil || t.finished || t.started {
 		return
 	}
 
+	t.started = true
 	t.startedAt = t.now()
 	t.log(occupancyLogEntry{
 		Event:   "request-start",

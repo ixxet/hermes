@@ -39,12 +39,12 @@ var ErrInvalidFormat = errors.New("format must be one of: json, text")
 
 func Execute(args []string, deps Dependencies) error {
 	command, trace := newRootCommand(args, deps)
-	if trace != nil {
-		trace.Start()
-	}
 	command.SetArgs(args)
 	err := command.Execute()
 	if err != nil && trace != nil {
+		if !trace.started {
+			trace.Start()
+		}
 		trace.Fail(err)
 	}
 	return err
@@ -131,6 +131,10 @@ func newRootCommand(args []string, deps Dependencies) (*cobra.Command, *occupanc
 		Use:   "occupancy",
 		Short: "Read current facility occupancy from ATHENA",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if trace != nil {
+				trace.Start()
+			}
+
 			if _, ok := validFormats[format]; !ok {
 				return ErrInvalidFormat
 			}

@@ -194,6 +194,44 @@ func TestAskOccupancyCommandSupportsTextOutput(t *testing.T) {
 	assertLogSequence(t, entries, []string{"request-start", "request-complete"})
 }
 
+func TestAskOccupancyCommandHelpDoesNotEmitObservabilityLogs(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	loadCalled := false
+	askCalled := false
+
+	err := Execute([]string{"ask", "occupancy", "--help"}, Dependencies{
+		Stdout:       &stdout,
+		Stderr:       &stderr,
+		Version:      "v0.1.1",
+		Now:          fixedClock(time.Date(2026, 4, 8, 9, 25, 0, 0, time.UTC)),
+		NewRequestID: func() string { return "req-help" },
+		LoadConfig: func() (config.Config, error) {
+			loadCalled = true
+			return config.Config{}, nil
+		},
+		NewOccupancyAsker: func(config.Config) (OccupancyAsker, error) {
+			askCalled = true
+			return stubOccupancyAsker{}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if !strings.Contains(stdout.String(), "Read current facility occupancy from ATHENA") {
+		t.Fatalf("stdout = %q, want occupancy help output", stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no observability output", stderr.String())
+	}
+	if loadCalled {
+		t.Fatal("LoadConfig() was called for help output")
+	}
+	if askCalled {
+		t.Fatal("NewOccupancyAsker() was called for help output")
+	}
+}
+
 func TestAskOccupancyCommandStructuredFailureLogs(t *testing.T) {
 	invalidFormatLoadCalled := false
 	invalidFormatAskCalled := false
