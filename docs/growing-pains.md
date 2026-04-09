@@ -40,3 +40,18 @@ approval mistakes, and the fixes that made `hermes` safer and easier to trust.
   pretending the current observability is deeper than it is.
   Rule: future HERMES widening should add low-noise structured request/result
   logs before claiming stronger operational maturity.
+
+## 2026-04-09
+
+- Symptom: the first Tracer 17 sketches drifted toward separate
+  `occupancy-report` and `heat-map` commands or direct history-file reads.
+  Cause: durable history was already real in ATHENA, but HERMES still lacked an
+  honest bounded upstream history surface, and splitting the answer into
+  multiple commands risked turning one tracer into a broad operator shell.
+  Fix: keep Tracer 17 to one `hermes ask reconciliation` question backed by the
+  existing ATHENA occupancy read plus one privacy-safe bounded history read,
+  with occupancy reports and heat-map-style buckets bundled into the same
+  answer.
+  Rule: when HERMES widens, add only the minimum upstream support needed and
+  keep related read artifacts inside one bounded question instead of inventing
+  multiple operator sub-products or private service shortcuts.

@@ -139,3 +139,115 @@ func TestClientCurrentOccupancyClassifiesTransportFailure(t *testing.T) {
 		t.Fatalf("CurrentOccupancy() error = %v, want %v", err, ErrRequestFailed)
 	}
 }
+
+func TestClientOccupancyHistoryConsumesAthenaHistorySurface(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("method = %s, want %s", r.Method, http.MethodGet)
+		}
+		if r.URL.Path != "/api/v1/presence/history" {
+			t.Fatalf("path = %q, want %q", r.URL.Path, "/api/v1/presence/history")
+		}
+		if facility := r.URL.Query().Get("facility"); facility != "ashtonbee" {
+			t.Fatalf("facility = %q, want %q", facility, "ashtonbee")
+		}
+		if since := r.URL.Query().Get("since"); since != "2026-04-09T11:00:00Z" {
+			t.Fatalf("since = %q, want %q", since, "2026-04-09T11:00:00Z")
+		}
+		if until := r.URL.Query().Get("until"); until != "2026-04-09T13:00:00Z" {
+			t.Fatalf("until = %q, want %q", until, "2026-04-09T13:00:00Z")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"facility_id":"ashtonbee",
+			"since":"2026-04-09T11:00:00Z",
+			"until":"2026-04-09T13:00:00Z",
+			"observations":[
+				{"direction":"in","result":"pass","observed_at":"2026-04-09T12:00:00Z","committed":true},
+				{"direction":"out","result":"fail","observed_at":"2026-04-09T12:30:00Z","committed":false}
+			]
+		}`))
+	}))
+	defer server.Close()
+
+	client, err := NewClient(server.URL, 2*time.Second)
+	if err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	observations, err := client.OccupancyHistory(context.Background(), HistoryFilter{
+		FacilityID: "ashtonbee",
+		Since:      time.Date(2026, 4, 9, 11, 0, 0, 0, time.UTC),
+		Until:      time.Date(2026, 4, 9, 13, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatalf("OccupancyHistory() error = %v", err)
+	}
+	if len(observations) != 2 {
+		t.Fatalf("len(observations) = %d, want 2", len(observations))
+	}
+	if observations[0].Direction != "in" || observations[0].Result != "pass" || !observations[0].Committed {
+		t.Fatalf("observations[0] = %#v, want committed pass entry", observations[0])
+	}
+	if observations[1].Direction != "out" || observations[1].Result != "fail" || observations[1].Committed {
+		t.Fatalf("observations[1] = %#v, want uncommitted fail exit", observations[1])
+	}
+}
+
+func TestClientOccupancyHistoryMapsFailuresClearly(t *testing.T) {
+	testCases := []struct {
+		name     string
+		handler  http.HandlerFunc
+		wantErr  string
+		checkErr func(error) bool
+	}{
+		{
+			name: "upstream disabled",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = w.Write([]byte(`{"error":"edge observation history is not configured"}`))
+			},
+			wantErr: "history is not configured",
+			checkErr: func(err error) bool {
+				var upstreamErr *UpstreamStatusError
+				return errors.As(err, &upstreamErr) && upstreamErr.StatusCode == http.StatusServiceUnavailable
+			},
+		},
+		{
+			name: "malformed history body",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte(`{"facility_id":"ashtonbee","observations":[{"direction":"sideways"}]}`))
+			},
+			wantErr:  "malformed",
+			checkErr: func(err error) bool { return errors.Is(err, ErrHistoryMalformedResponse) },
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			server := httptest.NewServer(testCase.handler)
+			defer server.Close()
+
+			client, err := NewClient(server.URL, 2*time.Second)
+			if err != nil {
+				t.Fatalf("NewClient() error = %v", err)
+			}
+
+			_, err = client.OccupancyHistory(context.Background(), HistoryFilter{
+				FacilityID: "ashtonbee",
+				Since:      time.Date(2026, 4, 9, 11, 0, 0, 0, time.UTC),
+				Until:      time.Date(2026, 4, 9, 13, 0, 0, 0, time.UTC),
+			})
+			if err == nil {
+				t.Fatal("OccupancyHistory() error = nil, want failure")
+			}
+			if !strings.Contains(err.Error(), testCase.wantErr) {
+				t.Fatalf("OccupancyHistory() error = %q, want substring %q", err.Error(), testCase.wantErr)
+			}
+			if testCase.checkErr != nil && !testCase.checkErr(err) {
+				t.Fatalf("OccupancyHistory() error = %v, want specific classification", err)
+			}
+		})
+	}
+}

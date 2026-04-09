@@ -14,13 +14,18 @@ import (
 	"github.com/ixxet/hermes/internal/ops"
 )
 
-const tracerID = 14
+const (
+	occupancyTracerID      = 14
+	reconciliationTracerID = 17
+)
 
 var requestSequence atomic.Uint64
 
 type occupancyTrace struct {
 	writer    io.Writer
 	now       func() time.Time
+	question  string
+	tracer    int
 	requestID string
 	facility  string
 	version   string
@@ -51,10 +56,12 @@ type classifiedError struct {
 	upstreamStatus *int
 }
 
-func newOccupancyTrace(writer io.Writer, now func() time.Time, requestID, facility, version string) *occupancyTrace {
+func newOccupancyTrace(writer io.Writer, now func() time.Time, question string, tracer int, requestID, facility, version string) *occupancyTrace {
 	return &occupancyTrace{
 		writer:    writer,
 		now:       now,
+		question:  question,
+		tracer:    tracer,
 		requestID: requestID,
 		facility:  strings.TrimSpace(facility),
 		version:   version,
@@ -65,9 +72,24 @@ func nextRequestID() string {
 	return fmt.Sprintf("occ-%06d", requestSequence.Add(1))
 }
 
-func occupancyInvocationFacility(args []string) (string, bool) {
-	if len(args) < 2 || args[0] != "ask" || args[1] != "occupancy" {
-		return "", false
+func tracedInvocation(args []string) (string, int, string, bool) {
+	if len(args) < 2 || args[0] != "ask" {
+		return "", 0, "", false
+	}
+
+	var (
+		question string
+		tracer   int
+	)
+	switch args[1] {
+	case "occupancy":
+		question = "occupancy"
+		tracer = occupancyTracerID
+	case "reconciliation":
+		question = "reconciliation"
+		tracer = reconciliationTracerID
+	default:
+		return "", 0, "", false
 	}
 
 	var facility string
@@ -81,7 +103,7 @@ func occupancyInvocationFacility(args []string) (string, bool) {
 		}
 	}
 
-	return strings.TrimSpace(facility), true
+	return question, tracer, strings.TrimSpace(facility), true
 }
 
 func (t *occupancyTrace) Start() {
@@ -97,23 +119,22 @@ func (t *occupancyTrace) Start() {
 	})
 }
 
-func (t *occupancyTrace) Complete(answer ops.OccupancyAnswer) {
+func (t *occupancyTrace) Complete(facility string, currentCount int) {
 	if t == nil || t.finished {
 		return
 	}
 
 	t.finished = true
 	durationMS := t.durationMilliseconds()
-	occupancyCount := answer.CurrentCount
-	if strings.TrimSpace(answer.FacilityID) != "" {
-		t.facility = strings.TrimSpace(answer.FacilityID)
+	if strings.TrimSpace(facility) != "" {
+		t.facility = strings.TrimSpace(facility)
 	}
 
 	t.log(occupancyLogEntry{
 		Event:          "request-complete",
 		Outcome:        "success",
 		DurationMS:     &durationMS,
-		OccupancyCount: &occupancyCount,
+		OccupancyCount: &currentCount,
 	})
 }
 
@@ -154,8 +175,8 @@ func (t *occupancyTrace) log(entry occupancyLogEntry) {
 	}
 
 	entry.Component = "hermes"
-	entry.Tracer = tracerID
-	entry.Question = "occupancy"
+	entry.Tracer = t.tracer
+	entry.Question = t.question
 	entry.RequestID = t.requestID
 	entry.Facility = t.facility
 	entry.Upstream = "athena"
@@ -172,7 +193,12 @@ func classifyOccupancyError(err error) classifiedError {
 	}
 
 	switch {
-	case errors.Is(err, ErrInvalidFormat), errors.Is(err, ops.ErrFacilityRequired), isCobraValidationError(err):
+	case errors.Is(err, ErrInvalidFormat),
+		errors.Is(err, ops.ErrFacilityRequired),
+		errors.Is(err, ops.ErrWindowRequired),
+		errors.Is(err, ops.ErrBinRequired),
+		errors.Is(err, ops.ErrBinExceedsWindow),
+		isCobraValidationError(err):
 		return classifiedError{kind: "validation_error"}
 	case errors.Is(err, config.ErrAthenaBaseURLRequired),
 		errors.Is(err, config.ErrAthenaBaseURLInvalid),
@@ -182,7 +208,7 @@ func classifyOccupancyError(err error) classifiedError {
 		return classifiedError{kind: "config_error"}
 	case errors.Is(err, athena.ErrRequestTimeout):
 		return classifiedError{kind: "upstream_timeout"}
-	case errors.Is(err, athena.ErrMalformedResponse):
+	case errors.Is(err, athena.ErrMalformedResponse), errors.Is(err, athena.ErrHistoryMalformedResponse), errors.Is(err, ops.ErrHistoryInconsistent):
 		return classifiedError{kind: "decode_error"}
 	case errors.Is(err, athena.ErrRequestFailed):
 		return classifiedError{kind: "upstream_error"}

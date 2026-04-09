@@ -30,6 +30,19 @@ func (s stubOccupancyAsker) AskOccupancy(context.Context, string) (ops.Occupancy
 	return s.answer, nil
 }
 
+type stubReconciliationAsker struct {
+	answer ops.ReconciliationAnswer
+	err    error
+}
+
+func (s stubReconciliationAsker) AskReconciliation(context.Context, string, time.Duration, time.Duration) (ops.ReconciliationAnswer, error) {
+	if s.err != nil {
+		return ops.ReconciliationAnswer{}, s.err
+	}
+
+	return s.answer, nil
+}
+
 type observedLogEntry struct {
 	Event          string `json:"event"`
 	Component      string `json:"component"`
@@ -474,6 +487,227 @@ func TestAskOccupancyCommandObservabilityRemainsLowNoiseAcrossRepeatedRuns(t *te
 	})
 }
 
+func TestAskReconciliationCommandOutputsStableJSONShapeAndStructuredSuccessLog(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	err := Execute([]string{"ask", "reconciliation", "--facility", "ashtonbee", "--window", "2h", "--bin", "1h"}, Dependencies{
+		Stdout:       &stdout,
+		Stderr:       &stderr,
+		Version:      "v0.2.0",
+		Now:          fixedClock(time.Date(2026, 4, 9, 13, 0, 0, 0, time.UTC), time.Date(2026, 4, 9, 13, 0, 0, 25*int(time.Millisecond), time.UTC)),
+		NewRequestID: func() string { return "req-reconciliation-success" },
+		LoadConfig: func() (config.Config, error) {
+			return config.Config{
+				AthenaBaseURL: "http://127.0.0.1:18080",
+				HTTPTimeout:   5 * time.Second,
+			}, nil
+		},
+		NewReconciliationAsker: func(config.Config) (ReconciliationAsker, error) {
+			return stubReconciliationAsker{
+				answer: ops.ReconciliationAnswer{
+					FacilityID:    "ashtonbee",
+					SourceService: "athena",
+					WindowStart:   "2026-04-09T11:00:00Z",
+					WindowEnd:     "2026-04-09T13:00:00Z",
+					Current: ops.ReconciliationCurrent{
+						CurrentCount: 2,
+						ObservedAt:   "2026-04-09T13:00:00Z",
+					},
+					Report: ops.ReconciliationReport{
+						OpeningCount:              2,
+						NetChange:                 0,
+						CommittedEntries:          2,
+						CommittedExits:            1,
+						FailedObservations:        1,
+						ObservedPassWithoutChange: 1,
+						PeakOccupancy:             3,
+						PeakObservedAt:            "2026-04-09T11:10:00Z",
+					},
+					HeatMap: []ops.ReconciliationHeatCell{
+						{
+							WindowStart:               "2026-04-09T11:00:00Z",
+							WindowEnd:                 "2026-04-09T12:00:00Z",
+							HeatLevel:                 4,
+							OccupancyPeak:             3,
+							OccupancyEnd:              3,
+							CommittedEntries:          1,
+							CommittedExits:            0,
+							FailedObservations:        1,
+							ObservedPassWithoutChange: 1,
+						},
+					},
+					InspectNext: ops.ReconciliationInspect{
+						Category:    "observation-heavy-window",
+						Reason:      "highest non-committed or failed observation activity in stable history",
+						WindowStart: "2026-04-09T11:00:00Z",
+						WindowEnd:   "2026-04-09T12:00:00Z",
+					},
+				},
+			}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if !strings.Contains(stdout.String(), `"facility_id":"ashtonbee"`) {
+		t.Fatalf("stdout = %q, want reconciliation json payload", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), `"heat_map":[`) {
+		t.Fatalf("stdout = %q, want heat_map section", stdout.String())
+	}
+
+	entries := decodeLogEntries(t, stderr.String())
+	assertLogSequence(t, entries, []string{"request-start", "request-complete"})
+	assertBaseFieldsWithQuestion(t, entries, "req-reconciliation-success", "ashtonbee", "v0.2.0", "reconciliation", 17)
+	if entries[1].OccupancyCount == nil || *entries[1].OccupancyCount != 2 {
+		t.Fatalf("completion occupancy_count = %#v, want 2", entries[1].OccupancyCount)
+	}
+}
+
+func TestAskReconciliationCommandSupportsTextOutput(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	err := Execute([]string{"ask", "reconciliation", "--facility", "ashtonbee", "--window", "2h", "--bin", "1h", "--format", "text"}, Dependencies{
+		Stdout:       &stdout,
+		Stderr:       &stderr,
+		Version:      "v0.2.0",
+		Now:          fixedClock(time.Date(2026, 4, 9, 13, 0, 0, 0, time.UTC), time.Date(2026, 4, 9, 13, 0, 0, 25*int(time.Millisecond), time.UTC)),
+		NewRequestID: func() string { return "req-reconciliation-text" },
+		LoadConfig: func() (config.Config, error) {
+			return config.Config{
+				AthenaBaseURL: "http://127.0.0.1:18080",
+				HTTPTimeout:   5 * time.Second,
+			}, nil
+		},
+		NewReconciliationAsker: func(config.Config) (ReconciliationAsker, error) {
+			return stubReconciliationAsker{
+				answer: ops.ReconciliationAnswer{
+					FacilityID:    "ashtonbee",
+					SourceService: "athena",
+					WindowStart:   "2026-04-09T11:00:00Z",
+					WindowEnd:     "2026-04-09T13:00:00Z",
+					Current: ops.ReconciliationCurrent{
+						CurrentCount: 2,
+						ObservedAt:   "2026-04-09T13:00:00Z",
+					},
+					Report: ops.ReconciliationReport{
+						OpeningCount:              2,
+						NetChange:                 0,
+						CommittedEntries:          2,
+						CommittedExits:            1,
+						FailedObservations:        1,
+						ObservedPassWithoutChange: 1,
+						PeakOccupancy:             3,
+						PeakObservedAt:            "2026-04-09T11:10:00Z",
+					},
+					HeatMap: []ops.ReconciliationHeatCell{
+						{
+							WindowStart:               "2026-04-09T11:00:00Z",
+							WindowEnd:                 "2026-04-09T12:00:00Z",
+							HeatLevel:                 4,
+							OccupancyPeak:             3,
+							OccupancyEnd:              3,
+							CommittedEntries:          1,
+							CommittedExits:            0,
+							FailedObservations:        1,
+							ObservedPassWithoutChange: 1,
+						},
+					},
+					InspectNext: ops.ReconciliationInspect{
+						Category:    "observation-heavy-window",
+						Reason:      "highest non-committed or failed observation activity in stable history",
+						WindowStart: "2026-04-09T11:00:00Z",
+						WindowEnd:   "2026-04-09T12:00:00Z",
+					},
+				},
+			}, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if !strings.Contains(stdout.String(), "inspect_next=observation-heavy-window") {
+		t.Fatalf("stdout = %q, want inspect_next line", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "heat_map:\n") {
+		t.Fatalf("stdout = %q, want heat_map section", stdout.String())
+	}
+
+	entries := decodeLogEntries(t, stderr.String())
+	assertLogSequence(t, entries, []string{"request-start", "request-complete"})
+	assertBaseFieldsWithQuestion(t, entries, "req-reconciliation-text", "ashtonbee", "v0.2.0", "reconciliation", 17)
+}
+
+func TestAskReconciliationCommandStructuredFailureLogs(t *testing.T) {
+	testCases := []struct {
+		name              string
+		args              []string
+		newReconciliation func(config.Config) (ReconciliationAsker, error)
+		wantKind          string
+		wantStatus        *int
+	}{
+		{
+			name: "validation failure",
+			args: []string{"ask", "reconciliation", "--facility", "ashtonbee", "--window", "1h", "--bin", "2h"},
+			newReconciliation: func(config.Config) (ReconciliationAsker, error) {
+				return stubReconciliationAsker{err: ops.ErrBinExceedsWindow}, nil
+			},
+			wantKind: "validation_error",
+		},
+		{
+			name: "upstream disabled",
+			args: []string{"ask", "reconciliation", "--facility", "ashtonbee", "--window", "2h", "--bin", "1h"},
+			newReconciliation: func(config.Config) (ReconciliationAsker, error) {
+				return stubReconciliationAsker{
+					err: &athena.UpstreamStatusError{StatusCode: 503, Message: "edge observation history is not configured"},
+				}, nil
+			},
+			wantKind:   "upstream_error",
+			wantStatus: intPointer(503),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			err := Execute(testCase.args, Dependencies{
+				Stdout:       &stdout,
+				Stderr:       &stderr,
+				Version:      "v0.2.0",
+				Now:          fixedClock(time.Date(2026, 4, 9, 13, 0, 0, 0, time.UTC), time.Date(2026, 4, 9, 13, 0, 0, 25*int(time.Millisecond), time.UTC)),
+				NewRequestID: func() string { return "req-reconciliation-failure" },
+				LoadConfig: func() (config.Config, error) {
+					return config.Config{
+						AthenaBaseURL: "http://127.0.0.1:18080",
+						HTTPTimeout:   5 * time.Second,
+					}, nil
+				},
+				NewReconciliationAsker: testCase.newReconciliation,
+			})
+			if err == nil {
+				t.Fatal("Execute() error = nil, want failure")
+			}
+			if stdout.String() != "" {
+				t.Fatalf("stdout = %q, want empty output", stdout.String())
+			}
+
+			entries := decodeLogEntries(t, stderr.String())
+			assertLogSequence(t, entries, []string{"request-start", "request-failed"})
+			assertBaseFieldsWithQuestion(t, entries, "req-reconciliation-failure", "ashtonbee", "v0.2.0", "reconciliation", 17)
+			if entries[1].ErrorKind != testCase.wantKind {
+				t.Fatalf("failure error_kind = %q, want %q", entries[1].ErrorKind, testCase.wantKind)
+			}
+			if !reflect.DeepEqual(entries[1].UpstreamStatus, testCase.wantStatus) {
+				t.Fatalf("failure upstream_status = %#v, want %#v", entries[1].UpstreamStatus, testCase.wantStatus)
+			}
+		})
+	}
+}
+
 func runOccupancy(t *testing.T, args []string, requestID string, asker stubOccupancyAsker) []observedLogEntry {
 	t.Helper()
 
@@ -522,15 +756,21 @@ func decodeLogEntries(t *testing.T, raw string) []observedLogEntry {
 func assertBaseFields(t *testing.T, entries []observedLogEntry, requestID, facility, version string) {
 	t.Helper()
 
+	assertBaseFieldsWithQuestion(t, entries, requestID, facility, version, "occupancy", 14)
+}
+
+func assertBaseFieldsWithQuestion(t *testing.T, entries []observedLogEntry, requestID, facility, version, question string, tracer int) {
+	t.Helper()
+
 	for _, entry := range entries {
 		if entry.Component != "hermes" {
 			t.Fatalf("component = %q, want hermes", entry.Component)
 		}
-		if entry.Tracer != 14 {
-			t.Fatalf("tracer = %d, want 14", entry.Tracer)
+		if entry.Tracer != tracer {
+			t.Fatalf("tracer = %d, want %d", entry.Tracer, tracer)
 		}
-		if entry.Question != "occupancy" {
-			t.Fatalf("question = %q, want occupancy", entry.Question)
+		if entry.Question != question {
+			t.Fatalf("question = %q, want %q", entry.Question, question)
 		}
 		if entry.RequestID != requestID {
 			t.Fatalf("request_id = %q, want %q", entry.RequestID, requestID)
