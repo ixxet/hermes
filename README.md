@@ -211,10 +211,10 @@ Accepted non-blocking carry-forward gaps:
 - no write or approval boundary exists yet
 - no reconciliation deployment proof is required for the current line
 
-If `Milestone 1.7` lands without widening the runtime, the deployment closeout
-is carried by companion deploy/docs repos and HERMES remains at `v0.1.1`
-runtime truth. If runtime-safe HERMES changes are ever required later, that line
-should remain a patch-style `v0.1.2`, not a new capability minor.
+`Milestone 1.7` already closed as deployment-only truth on the earlier
+occupancy slice. Now that `v0.2.0` is shipped, any runtime-safe follow-up on
+the current read-only surface should remain a patch-style `v0.2.x`, not a new
+capability minor.
 
 Prometheus remained out of scope for Tracer 8 hardening because deployment
 truth did not change.
@@ -226,6 +226,7 @@ truth did not change.
 | `v0.0.1` | `v0.0.1` | Shipped | docs-first planning baseline | executable runtime, deployment proof, and write actions |
 | `v0.1.0` | `v0.1.0` | Shipped | read-only occupancy CLI over ATHENA public truth | observability hardening, live deployment proof, richer questions, and write actions |
 | `v0.1.1` | `v0.1.1` | Shipped | low-noise structured occupancy request/result/outcome observability without runtime widening | live deployment proof, richer questions, and write actions |
+| `v0.2.0` | `v0.2.0` | Shipped | one richer read-only reconciliation question plus occupancy reports and heat-map-style buckets over stable ATHENA truth | writes, overrides, identity-level reconciliation answers, and reconciliation deployment proof |
 
 ## Versioning Discipline
 
@@ -244,18 +245,16 @@ HERMES now follows formal pre-`1.0.0` semantic versioning rather than loose
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
-| `v0.1.2` | reserved for a future runtime-safe patch if HERMES code ever changes | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
-| deployment-only closeout | Milestone 1.7 live deployment proof with unchanged runtime | keep the runtime line at `v0.1.1` and close the deployment proof in companion repos/docs | do not overstate a new HERMES capability line when only deployment truth changed |
-| `v0.2.0` | one richer read-only reconciliation question plus occupancy report and heat-map-style buckets | keep the new question source-backed, privacy-safe, and narrow | do not invent identity-level answers, add overrides, or split into a broad operator shell |
+| `v0.2.1` | reserved for a future bounded hardening follow-up on the current occupancy + reconciliation surface | keep the runtime read-only, source-backed, and within the current two-question CLI shape | do not add a second richer question, write authority, or broad assistant UX |
 | `v0.3.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
 ## Next Ladder Role
 
 | Line | Role | Why it matters |
 | --- | --- | --- |
-| `v0.1.1` / `Tracer 14` | observability hardening | turns the current occupancy CLI from a thin proof into an inspectable operational slice |
-| deployment-only / `Milestone 1.7` | bounded live deployment proof | upgrades the staff pillar from local/runtime truth to live deployment truth without pretending that deployment proof is automatically a new capability |
-| `v0.2.0` | one richer read-only reconciliation question | creates the first broader operator-facing read surface without widening into overrides or writes |
+| `v0.2.0` / `Tracer 17` | one richer read-only reconciliation question | creates the first broader operator-facing read surface without widening into overrides or writes |
+| `v0.2.1` | bounded hardening follow-up if the current read-only surface needs it | keeps the current line honest without creating a second capability jump |
+| `v0.3.0` | first write action plus approval boundary | moves HERMES past read-only only when explicit approval discipline exists |
 
 ## Docs Map
 

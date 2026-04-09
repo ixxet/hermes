@@ -7,7 +7,7 @@ source-backed boundary is trustworthy and observable.
 
 ## Current Line
 
-Current active line: `v0.2.0` repo truth
+Current active line: `v0.2.0` shipped
 
 - one read-only occupancy CLI question is real
 - one richer read-only reconciliation CLI question is now real
@@ -33,17 +33,16 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
-| `v0.1.2` | reserved for a future runtime-safe patch if HERMES code ever changes | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
-| deployment-only closeout | Milestone 1.7 live deployment proof with unchanged runtime | keep the runtime line at `v0.1.1` and close deployment proof in companion repos/docs | do not overstate a new capability line when only deployment truth changed |
-| `v0.2.0` | one richer read-only reconciliation question over current + stable-history truth | keep the new question source-backed, privacy-safe, and narrow | do not invent identity-level answers or broaden into multiple operator shells |
+| `v0.2.1` | reserved for a future bounded hardening follow-up on the current occupancy + reconciliation surface | keep the runtime read-only, source-backed, and within the current two-question CLI shape | do not add a second richer question, write authority, or broad assistant UX |
 | `v0.3.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
 ## Next Ladder Role
 
 | Line | Role | Why it matters |
 | --- | --- | --- |
-| `Milestone 1.7` | bounded live deployment proof | upgraded HERMES from local/runtime truth to deploy truth for the occupancy slice |
 | `Tracer 17` / `v0.2.0` | one richer read-only reconciliation question | broadens the staff pillar with stable-history reports and heat-map-style reads while staying read-only |
+| bounded hardening / `v0.2.1` | runtime-safe follow-up on the current read-only surface if needed | keeps the current line honest without creating a second capability jump |
+| later HERMES line / `v0.3.0` | first write action plus approval boundary | moves HERMES past read-only only when explicit approval discipline exists |
 
 ## Boundaries
 
