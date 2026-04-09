@@ -4,13 +4,19 @@ HERMES is the staff-facing operations repo in ASHTON.
 
 > Current real slice: one read-only staff CLI question,
 > `hermes ask occupancy --facility <id>`, backed by ATHENA's public
-> `GET /api/v1/presence/count?facility=` surface. This tracer proves that
-> HERMES can read and summarize upstream truth without write authority,
-> private DB access, or agent orchestration.
+> `GET /api/v1/presence/count?facility=` surface. Milestone 1.7 proved the
+> same slice live in-cluster as an internal runner deployment, without write
+> authority, private DB access, or agent orchestration.
 
 That is intentionally narrow. HERMES is no longer docs-first, but it is still
 nowhere close to a broad assistant runtime. The value of this repo right now is
-that the first staff slice is executable, source-backed, and easy to audit.
+that the first staff slice is executable, source-backed, and easy to audit in
+both local and deployed form.
+
+Packaging note: the repo now includes a container build path at
+[`Dockerfile`](Dockerfile) so the same bounded runtime can be packaged for
+internal deployment. That is build and packaging truth, not a broader runtime
+capability.
 
 Representative command:
 
@@ -80,7 +86,7 @@ flowchart LR
 | ATHENA client | Go `net/http` + explicit JSON parsing | Real | `v0.1.0` | Reads stable public upstream truth without private schema drift |
 | Structured read output | JSON or text | Real | `v0.1.0` | Keeps the first answer traceable and machine-checkable |
 | Observability hardening | low-noise structured request/result logs | Real | `v0.1.1` | Tracer 14 makes the current occupancy slice operationally inspectable without widening it |
-| Live deployment proof | deployed HERMES runtime | Planned | `v0.1.2` if runtime changes, otherwise deployment closeout only | Milestone 1.7 should prove the existing slice live without widening the question |
+| Live deployment proof | deployed HERMES runtime | Real | deployment-only closeout | Milestone 1.7 proved the existing slice live without widening the question |
 | Interactive gateway | Go | Planned | later than `v0.2.0` | Future staff session entrypoint, not current runtime |
 | Agent orchestration | LangGraph (Python) | Planned | later than `v0.3.0` | Deferred until read-only trust is earned |
 | Write safety | Human-in-the-loop approvals | Planned | `v0.3.0` | No write behavior exists yet |
@@ -127,7 +133,8 @@ The current output shape is:
   stdout answer payloads stay unchanged
 - timeouts, malformed JSON, and upstream 500s return explicit errors instead of
   fabricated answers
-- the slice is locally proven only; no live deployment claim was added
+- the slice is now proven locally and in cluster as an internal runner
+- the deployed shape is internal-only and exec-driven, not a public service
 
 ## Planned Component Map
 
@@ -142,12 +149,15 @@ The current output shape is:
 
 ## Deployment Boundary
 
-Tracer 8 does not widen deployment truth.
+Tracer 8 did not widen deployment truth; Milestone 1.7 closed it as a bounded
+internal runner deployment.
 
 - verified local truth: HERMES can answer one read-only occupancy question from
   a real ATHENA runtime
-- verified deployed truth: unchanged from earlier milestones
-- deferred cluster truth: no live HERMES deployment claim exists yet
+- verified deployed truth: HERMES answers the same occupancy question in
+  cluster as an internal-only runner deployment
+- deferred truth: no public service, write authority, or broader assistant
+  surface was added
 
 ## Hardening Notes
 
@@ -164,13 +174,13 @@ Expected destructive failures during hardening:
 
 Accepted non-blocking carry-forward gaps:
 
-- no live HERMES deployment proof exists yet
 - no richer staff questions beyond occupancy are proven yet
+- no public service shape is required for the current line
 
 If `Milestone 1.7` lands without widening the runtime, the deployment closeout
-may be carried by companion deploy/docs repos rather than a new HERMES minor
-release. If runtime-safe HERMES changes are required, that line should remain a
-patch-style `v0.1.2`, not a new capability minor.
+is carried by companion deploy/docs repos and HERMES remains at `v0.1.1`
+runtime truth. If runtime-safe HERMES changes are ever required later, that line
+should remain a patch-style `v0.1.2`, not a new capability minor.
 
 Prometheus remained out of scope for Tracer 8 hardening because deployment
 truth did not change.
@@ -200,8 +210,8 @@ HERMES now follows formal pre-`1.0.0` semantic versioning rather than loose
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
-| `v0.1.2` | live deployment proof for Milestone 1.7 if runtime changes are required | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
-| deployment-only closeout | live deployment proof for Milestone 1.7 if runtime stays unchanged | keep the runtime line at `v0.1.1` and close the deployment proof in companion repos/docs | do not overstate a new HERMES capability line when only deployment truth changed |
+| `v0.1.2` | reserved for a future runtime-safe patch if HERMES code ever changes | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
+| deployment-only closeout | Milestone 1.7 live deployment proof with unchanged runtime | keep the runtime line at `v0.1.1` and close the deployment proof in companion repos/docs | do not overstate a new HERMES capability line when only deployment truth changed |
 | `v0.2.0` | one richer read-only staff question if public upstream truth supports it | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
 | `v0.3.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
@@ -210,8 +220,8 @@ HERMES now follows formal pre-`1.0.0` semantic versioning rather than loose
 | Line | Role | Why it matters |
 | --- | --- | --- |
 | `v0.1.1` / `Tracer 14` | observability hardening | turns the current occupancy CLI from a thin proof into an inspectable operational slice |
-| `v0.1.2` if runtime changes, otherwise deploy-only / `Milestone 1.7` | bounded live deployment proof | upgrades the staff pillar from local/runtime truth to live deployment truth without pretending that deployment proof is automatically a new capability |
-| `v0.2.0` / `Tracer 17` | one richer read-only staff question | creates the first broader operator-facing read surface without widening into overrides or writes |
+| deployment-only / `Milestone 1.7` | bounded live deployment proof | upgrades the staff pillar from local/runtime truth to live deployment truth without pretending that deployment proof is automatically a new capability |
+| `v0.2.0` | one richer read-only staff question | creates the first broader operator-facing read surface without widening into overrides or writes |
 
 ## Docs Map
 

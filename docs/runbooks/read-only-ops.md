@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Use this runbook for the first HERMES slice before any write paths exist.
+Use this runbook for the first HERMES slice and its Milestone 1.7 internal
+runner deployment proof before any write paths exist.
 
 ## Rules
 
@@ -12,6 +13,7 @@ Use this runbook for the first HERMES slice before any write paths exist.
 - use public upstream service surfaces, not private database access
 - identify the source service in the output
 - fail clearly on malformed or unavailable upstream data
+- keep the deployed HERMES shape internal-only and exec-driven
 
 ## Required Checks
 
@@ -22,6 +24,8 @@ Use this runbook for the first HERMES slice before any write paths exist.
 - `go test -count=2 ./...`
 - repeated boundary runs for `./internal/athena` and `./internal/command`
 - `go build ./cmd/hermes`
+- `docker buildx build --platform linux/amd64 --load -t hermes:milestone-1-7-local .`
+- `kubectl exec -n agents deploy/hermes -- /bin/sh -lc '/usr/local/bin/hermes ask occupancy --facility ashtonbee --format json 2>/proc/1/fd/2'`
 
 ## Tracer 8 Verified Commands
 
@@ -97,6 +101,27 @@ Expected smoke outcomes:
 - malformed upstream reads fail clearly and return a non-zero CLI exit code
 - no write behavior exists in the tracer
 
+## Milestone 1.7 Deployed Smoke
+
+The live Milestone 1.7 proof used an internal runner deployment in the
+`agents` namespace. The deployed shape stayed narrow: no public service, no
+Ingress, and no write authority.
+
+Verified deployment truth:
+
+- HERMES ran as a bounded internal runner image packaged from the repo's Docker
+  build path
+- the deployed image was pinned by digest in cluster
+- three live `hermes ask occupancy --facility ashtonbee --format json` reads
+  succeeded against ATHENA-backed truth
+- invalid and unknown facility probes stayed source-backed and read-only
+
+Representative live proof command:
+
+```bash
+kubectl exec -n agents deploy/hermes -- /bin/sh -lc '/usr/local/bin/hermes ask occupancy --facility ashtonbee --format json 2>/proc/1/fd/2'
+```
+
 ## Hardening Interpretation
 
 Do not treat every failing command in the hardening pass as a product bug.
@@ -107,3 +132,5 @@ Do not treat every failing command in the hardening pass as a product bug.
   healthy ATHENA runtime breaks
 - Prometheus outage does not affect this tracer unless a future HERMES tracer
   widens deployment truth
+- deployment proof does not imply a public service or broader assistant
+  surface

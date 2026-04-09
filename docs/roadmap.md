@@ -13,8 +13,10 @@ Current active line: `v0.1.1`
 - low-noise structured request/result/outcome observability is now real for the
   occupancy slice
 - ATHENA public truth is the only upstream source in active use
-- the slice is locally proven only
-- deployment proof and write authority remain deferred
+- the slice is locally proven and now also proven in cluster as an internal
+  runner deployment
+- deployment proof is complete as a deployment-only closeout; write authority
+  remains deferred
 
 ## Versioning Discipline
 
@@ -30,8 +32,8 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 
 | Planned tag | Intended purpose | Restrictions | What it should not do yet |
 | --- | --- | --- | --- |
-| `v0.1.2` | live deployment proof for Milestone 1.7 if runtime changes are required | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
-| deployment-only closeout | live deployment proof for Milestone 1.7 if runtime stays unchanged | keep the runtime line at `v0.1.1` and close deployment proof in companion repos/docs | do not overstate a new capability line when only deployment truth changed |
+| `v0.1.2` | reserved for a future runtime-safe patch if HERMES code ever changes | prove the existing occupancy slice in-cluster and stop there | do not imply write authority or broad assistant maturity |
+| deployment-only closeout | Milestone 1.7 live deployment proof with unchanged runtime | keep the runtime line at `v0.1.1` and close deployment proof in companion repos/docs | do not overstate a new capability line when only deployment truth changed |
 | `v0.2.0` | one richer read-only staff question if a stable public upstream surface exists | keep the new question source-backed and narrow | do not invent identity-level answers without public upstream truth |
 | `v0.3.0` | first write action plus approval boundary | add explicit write authority only with approval discipline | do not widen into broad workflow orchestration in the same line |
 
@@ -40,7 +42,7 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 | Line | Role | Why it matters |
 | --- | --- | --- |
 | `Milestone 1.7` | bounded live deployment proof | upgrades HERMES from local/runtime truth to deploy truth |
-| `Tracer 17` | one richer read-only question | broadens the staff pillar only after observability and deployment trust exist |
+| later richer read question | one richer read-only question | broadens the staff pillar only after observability and deployment trust exist |
 
 ## Boundaries
 
@@ -50,11 +52,13 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 - do not fabricate richer answers than upstream truth can support
 - let `Milestone 1.7` close in companion deploy/docs repos if runtime widening
   is unnecessary
+- keep the deployed HERMES shape internal-only and exec-driven, not a public
+  service
 
 ## Tracer / Workstream Ownership
 
 - `Tracer 8`: first read-only staff occupancy slice
 - `Tracer 14`: HERMES observability hardening
 - `Milestone 1.7`: live HERMES deployment proof
-- `Tracer 17`: one richer read-only question on `v0.2.0`
+- later richer read question: one richer read-only question on `v0.2.0`
 - later lines: first write action plus approval
