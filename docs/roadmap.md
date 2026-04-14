@@ -44,6 +44,18 @@ HERMES now follows formal pre-`1.0.0` semantic versioning.
 | bounded hardening / `v0.2.1` | runtime-safe follow-up on the current read-only surface if needed | keeps the current line honest without creating a second capability jump |
 | later HERMES line / `v0.3.0` | first write action plus approval boundary | moves HERMES past read-only only when explicit approval discipline exists |
 
+## Verified Audit Carry-Forward
+
+The `2026-04-13` backend logic audit reran `go test -count=1 ./...` and
+re-read the reconciliation service plus its current tests before narrowing the
+remaining HERMES carry-forward work.
+
+| Area | Ruling | Next honest line |
+| --- | --- | --- |
+| reconciliation bin semantics | verified medium: internal bins are half-open while the last bin includes `window_end` | the next bounded `v0.2.1` hardening line should choose the intended rule explicitly and add exact-boundary tests so the heat-map semantics stop living only in code |
+| broader reconciliation correctness failure | not proven by the audit | keep the current runtime unchanged until the boundary rule is explicit instead of widening the fix into a broader rewrite |
+| write authority / broader ops surface | unchanged and deferred | do not use the reconciliation follow-up as cover to widen into bookings, approvals, or agent orchestration |
+
 ## Boundaries
 
 - keep staff operations sourced from public upstream service truth
